@@ -34,14 +34,4 @@ public class HomeController {
             return ResponseEntity.status(500).body("Server error: " + e.getMessage());
         }
     }
-
-    @PostMapping("/github")
-    public ResponseEntity<?> processGithub(@RequestBody GithubRequest request) {
-        try {
-            return ResponseEntity.ok(researchService.processGithubRepo(request.getUrl()));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Server error: " + e.getMessage());
-        }
-    }
 }
