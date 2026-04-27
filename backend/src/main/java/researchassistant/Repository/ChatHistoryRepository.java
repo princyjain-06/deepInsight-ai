@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ChatHistoryRepository extends JpaRepository<ChatHistory, Long> {
     List<ChatHistory> findAllByOrderByCreatedAtDesc();
+    List<ChatHistory> findByUserEmailOrderByCreatedAtDesc(String userEmail);
 }

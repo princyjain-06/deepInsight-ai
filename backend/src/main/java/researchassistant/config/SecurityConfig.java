@@ -20,7 +20,12 @@ public class SecurityConfig {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/api/auth/**", "/api/research/**", "/error", "/login/**", "/oauth2/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/research/**",
+                                "/api/notes/**",   // ownership enforced in the controller
+                                "/error", "/login/**", "/oauth2/**"
+                        ).permitAll()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2.defaultSuccessUrl("http://localhost:5173/?loginSuccess=true", true));
         return http.build();
@@ -31,7 +36,11 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization", "Content-Type", "X-Requested-With",
+            "Accept", "Origin", "X-User-Email"
+        ));
+        configuration.setExposedHeaders(Arrays.asList("X-User-Email"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

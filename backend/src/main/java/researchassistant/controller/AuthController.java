@@ -43,13 +43,13 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            String response = authService.login(request);
+            Map<String, Object> result = authService.login(request);
 
-            if (response.startsWith("Error")) {
-                return ResponseEntity.status(401).body(Map.of("message", response));
+            if (!(Boolean) result.get("success")) {
+                return ResponseEntity.status(401).body(result);
             }
 
-            return ResponseEntity.ok(Map.of("message", response));
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("message", "Server error"));
         }

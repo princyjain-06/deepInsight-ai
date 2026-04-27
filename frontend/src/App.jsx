@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, FileText, Github, LineChart, ChevronRight, ArrowRight, MessageSquare, X, Paperclip, User, Copy, Check, Maximize2, Minimize2, Image as ImageIcon, Mic } from 'lucide-react';
+import { Search, FileText, Github, LineChart, ChevronRight, ArrowRight, MessageSquare, X, Paperclip, User, Copy, Check, Maximize2, Minimize2, Image as ImageIcon, Mic, Plus } from 'lucide-react';
 import Dashboard from './Dashboard';
+import BotChat from './components/ui/BotChat';
+import ScrollGlobe from './components/ui/landing-page';
+import HoverBorderGradient from './components/ui/hover-border-gradient';
+import NotesWorkspace from './NotesWorkspace';
 
 function App() {
   const [currentView, setCurrentView] = useState('landing');
@@ -13,12 +17,31 @@ function App() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewInfo, setPreviewInfo] = useState(null);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const fileInputRef = useRef(null);
 
   // Voice recording states
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
   const baseQueryRef = useRef('');
+
+  // FAB Scroll State
+  const [showNotesFab, setShowNotesFab] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY.current + 10) {
+        setShowNotesFab(false);
+      } else if (currentScrollY < lastScrollY.current - 10) {
+        setShowNotesFab(true);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const storedName = localStorage.getItem("username");
@@ -90,7 +113,8 @@ function App() {
 
   const fetchUserInfo = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/user/me', {
+      const response = await fetch('http://localhost:8081/api/user/me', {
+        credentials: 'include',
         headers: {
           'Accept': 'application/json'
         }
@@ -100,6 +124,8 @@ function App() {
         setIsLoggedIn(true);
         setUsername(data.name);
         localStorage.setItem("username", data.name);
+        // Also persist email so notes API can scope requests
+        if (data.email) localStorage.setItem("email", data.email);
         // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
         setModalState('onboarding-role');
@@ -126,11 +152,13 @@ function App() {
     setIsLoading(true);
     setChatResponse('');
     
+    const userEmail = localStorage.getItem('email') || '';
+
     // Set preview info if a file is attached
     if (selectedFile) {
       const isImg = selectedFile.type.startsWith('image/');
       setPreviewInfo({
-        url: isImg ? URL.createObjectURL(selectedFile) : null,
+        url: URL.createObjectURL(selectedFile),
         name: selectedFile.name,
         type: selectedFile.type,
         isImage: isImg
@@ -146,15 +174,17 @@ function App() {
         formData.append("image", selectedFile);
         formData.append("operation", text.trim() ? "chat" : "Summarize");
         
-        response = await fetch('http://localhost:8080/api/research/process-image', {
+        response = await fetch('http://localhost:8081/api/research/process-image', {
           method: 'POST',
+          headers: { 'X-User-Email': userEmail },
           body: formData,
         });
       } else {
-        response = await fetch('http://localhost:8080/api/research/process', {
+        response = await fetch('http://localhost:8081/api/research/process', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'X-User-Email': userEmail,
           },
           body: JSON.stringify({
             content: text,
@@ -212,7 +242,7 @@ function App() {
 
     if (modalState === 'signup') {
       try {
-        const response = await fetch('http://localhost:8080/api/auth/signup', {
+        const response = await fetch('http://localhost:8081/api/auth/signup', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -228,20 +258,21 @@ function App() {
         const data = await response.json();
 
         if (response.ok) {
-          // Save the name into local storage so Dashboard can display it
+          // Save the name AND email into local storage
           localStorage.setItem("username", fullName);
+          localStorage.setItem("email", email);
           
           // Proceed to onboarding
           setModalState('onboarding-role');
         } else {
           setError(data.message || 'Signup failed');
         }
-      } catch (err) {
+      } catch {
         setError('Network error: Could not connect to the server');
       }
     } else if (modalState === 'login') {
       try {
-        const response = await fetch('http://localhost:8080/api/auth/login', {
+        const response = await fetch('http://localhost:8081/api/auth/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -255,10 +286,10 @@ function App() {
         const data = await response.json();
 
         if (response.ok) {
-          // The backend returns: "Login successful! Welcome [Name]"
-          // So we can extract the name directly from the success message
-          const extractedName = data.message.replace("Login successful! Welcome ", "");
+          // Backend now returns { success, message, name, email }
+          const extractedName = data.name || data.message.replace("Login successful! Welcome ", "");
           localStorage.setItem("username", extractedName);
+          localStorage.setItem("email", data.email || email); // always persist email
 
           // Stay on landing page for returning users
           setIsLoggedIn(true);
@@ -267,7 +298,7 @@ function App() {
         } else {
           setError(data.message || 'Login failed');
         }
-      } catch (err) {
+      } catch {
         setError('Network error: Could not connect to the server');
       }
     }
@@ -275,7 +306,7 @@ function App() {
 
   const handleOAuthLogin = (provider) => {
     // Redirect to Spring Boot OAuth2 authorization endpoint
-    window.location.href = `http://localhost:8080/oauth2/authorization/${provider}`;
+    window.location.href = `http://localhost:8081/oauth2/authorization/${provider}`;
   };
 
   const handleRoleSelection = (role) => {
@@ -298,6 +329,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem("username");
+    localStorage.removeItem("email");  // clear so next user gets clean state
     setIsLoggedIn(false);
     setUsername("");
     setChatResponse("");
@@ -313,12 +345,35 @@ function App() {
     setCurrentView('landing');
   }
 
+  const handleStartResearch = () => {
+    if (isLoggedIn) {
+      setCurrentView('dashboard');
+    } else {
+      setModalState('signup');
+    }
+  };
+
+  if (currentView === 'notes-workspace') {
+    return <NotesWorkspace onBack={() => setCurrentView('dashboard')} />;
+  }
+
   if (currentView === 'dashboard') {
-    return <Dashboard userRole={userRole} onLogout={handleLogout} onNewChat={handleNewChat} onEditProfile={() => setCurrentView('edit-profile')} />;
+    return <Dashboard 
+      userRole={userRole} 
+      onLogout={handleLogout} 
+      onNewChat={handleNewChat} 
+      onEditProfile={() => setCurrentView('edit-profile')}
+      onOpenNotes={() => setCurrentView('notes-workspace')}
+      onFileUpload={(file) => {
+        setSelectedFile(file);
+        setCurrentView('landing');
+      }}
+    />;
   }
 
   return (
     <>
+      <div className="page-background" />
       <nav className="navbar container" style={{ position: 'relative', zIndex: 1001 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
         <div className="nav-logo">
@@ -334,302 +389,202 @@ function App() {
           <a href="#github">GitHub</a>
         </div>
         {isLoggedIn ? (
-          <div className="user-profile-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#e2e8f0', borderRadius: '24px', cursor: 'pointer' }} onClick={() => setCurrentView('edit-profile')}>
-            <div style={{ backgroundColor: '#cbd5e1', borderRadius: '50%', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <User size={16} color="#475569" />
+          <div style={{ position: 'relative' }}>
+            <div 
+              className="user-profile-btn" 
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#e2e8f0', borderRadius: '24px', cursor: 'pointer' }} 
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            >
+              <div style={{ backgroundColor: '#cbd5e1', borderRadius: '50%', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <User size={16} color="#475569" />
+              </div>
+              <span style={{ fontSize: '14px', fontWeight: '500', color: '#334155' }}>{username}</span>
             </div>
-            <span style={{ fontSize: '14px', fontWeight: '500', color: '#334155' }}>{username}</span>
+            
+            {showProfileDropdown && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', padding: '8px', width: '200px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)', zIndex: 1002, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <button 
+                  onClick={() => { setShowProfileDropdown(false); setCurrentView('edit-profile'); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', width: '100%', textAlign: 'left', fontSize: '13px', color: '#cbd5e1', borderRadius: '6px', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}
+                  onMouseOver={(e) => e.target.style.backgroundColor = '#1e293b'}
+                  onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  Edit Profile
+                </button>
+                <div style={{ height: '1px', backgroundColor: '#1e293b', margin: '4px 0' }} />
+                <button 
+                  onClick={() => { setShowProfileDropdown(false); handleLogout(); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', width: '100%', textAlign: 'left', fontSize: '13px', color: '#ef4444', borderRadius: '6px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+                  onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.2)'}
+                  onMouseOut={(e) => e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <button className="button-primary" onClick={() => setModalState('signup')}>Get Started</button>
         )}
       </nav>
 
-      {/* Floating Dashboard Button (Bottom Left) */}
+      {/* Perfectly Aligned Floating Action Buttons */}
       {isLoggedIn && (
-        <button 
-          className="button-primary" 
-          onClick={() => setCurrentView('dashboard')}
-          style={{
-            position: 'fixed',
-            bottom: '24px',
-            left: '24px',
-            zIndex: 100,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            borderRadius: '24px',
-            padding: '12px 20px'
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-          </svg>
-          Dashboard
-        </button>
+        <div className={`fixed bottom-6 left-0 right-0 px-6 z-[100] pointer-events-none flex justify-between items-center transition-all duration-300 ${showNotesFab ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+          <button 
+            className="button-primary pointer-events-auto" 
+            onClick={() => setCurrentView('dashboard')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              borderRadius: '24px',
+              padding: '12px 20px',
+              height: 'fit-content'
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Dashboard
+          </button>
+
+          <button
+            onClick={() => setCurrentView('notes-workspace')}
+            className={`pointer-events-auto flex flex-shrink-0 items-center justify-center rounded-[50%] transition-transform duration-300 shadow-2xl hover:scale-105 active:scale-95`}
+            style={{
+              width: '56px',
+              height: '56px',
+              backgroundColor: '#303247',
+              color: '#ced3f5',
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            }}
+            title="Open Notes Workspace"
+          >
+            <Plus size={28} strokeWidth={2} />
+          </button>
+        </div>
       )}
 
       <main>
-        <section className="hero container">
-          <div className="hero-content">
-            <h1>AI-Powered<br />Research Assistant</h1>
-            <p className="hero-subtext">Analyze documents, summarize research, and explore GitHub repositories with AI.</p>
-
-            <div className="chat-interface">
-              <form onSubmit={handleSearch} className="chat-input-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
-                {selectedFile && (
-                  <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#f1f5f9', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #e2e8f0', color: '#475569', fontSize: '14px' }}>
-                    <ImageIcon size={16} />
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedFile.name}</span>
-                    <button type="button" onClick={() => setSelectedFile(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="Remove image">
-                      <X size={16} />
-                    </button>
-                  </div>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                  <input
-                    type="text"
-                    className="chat-input"
-                    style={{ borderTopLeftRadius: selectedFile ? 0 : '24px' }}
-                    placeholder="Ask anything about research, papers, or GitHub projects..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                  <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    ref={fileInputRef}
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files.length > 0) {
-                        setSelectedFile(e.target.files[0]);
-                      }
-                    }}
-                  />
-                  <button type="button" className="chat-upload-btn" title="Upload Photo" onClick={() => fileInputRef.current?.click()}>
-                    <Paperclip size={20} />
-                  </button>
-                  <button 
-                    type="button" 
-                    className="chat-upload-btn" 
-                    title={isListening ? "Stop listening" : "Start Voice Input"} 
-                    onClick={toggleListening}
-                    style={{ color: isListening ? '#ef4444' : 'inherit' }}
-                  >
-                    <Mic size={20} />
-                  </button>
-                  <button type="submit" className="chat-submit-btn">
-                    <ArrowRight size={20} />
-                  </button>
-                </div>
-              </form>
-
-              <div className="example-prompts">
-                <button className="prompt-pill" onClick={() => handlePromptClick("Summarize this research paper")}>
-                  <MessageSquare size={14} /> Summarize this research paper
-                </button>
-                <button className="prompt-pill" onClick={() => handlePromptClick("Explain reinforcement learning")}>
-                  <MessageSquare size={14} /> Explain reinforcement learning
-                </button>
-                <button className="prompt-pill" onClick={() => handlePromptClick("Analyze this GitHub repository")}>
-                  <MessageSquare size={14} /> Analyze this GitHub repository
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Side Area */}
-          {(isLoading || chatResponse) ? (
-            <>
-            {isMaximized && (
-              <div 
-                className="maximize-backdrop" 
-                onClick={() => setIsMaximized(false)}
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: '#ffffff',
-                  zIndex: 999
-                }} 
-              />
-            )}
-            <div className={`hero-response-container ${isMaximized ? 'maximized' : ''}`} style={isMaximized ? {
-              position: 'fixed',
-              top: '80px', // Below navbar
-              left: '24px',
-              right: '24px',
-              bottom: '24px',
-              zIndex: 1000,
-              backgroundColor: '#1e293b',
-              borderRadius: '16px',
-              padding: '0',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-              color: '#f8fafc',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden'
-            } : { 
-              flex: 1, 
-              backgroundColor: '#1e293b', 
-              borderRadius: '16px', 
-              padding: '0', 
-              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)', 
-              color: '#f8fafc',
-              display: 'flex',
-              flexDirection: 'column',
-              maxHeight: '600px',
-              overflow: 'hidden',
-              position: 'relative'
-            }}>
-              {/* Header Box with Copy and Maximize Buttons */}
-              {chatResponse && !isLoading && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a' }}>
-                  <button 
-                    onClick={handleCopy}
-                    style={{ 
-                      background: 'none', 
-                      border: 'none', 
-                      color: isCopied ? '#22c55e' : '#94a3b8', 
-                      cursor: 'pointer', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '6px',
-                      fontSize: '14px'
-                    }}
-                    title="Copy to clipboard"
-                  >
-                    {isCopied ? <Check size={16} /> : <Copy size={16} />} 
-                    {isCopied ? 'Copied' : 'Copy'}
-                  </button>
-                  <button 
-                    onClick={() => setIsMaximized(!isMaximized)}
-                    style={{ 
-                      background: 'none', 
-                      border: 'none', 
-                      color: '#94a3b8', 
-                      cursor: 'pointer', 
-                      display: 'flex', 
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '4px',
-                      borderRadius: '4px'
-                    }}
-                    title={isMaximized ? "Restore down" : "Maximize"}
-                  >
-                    {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-                  </button>
-                </div>
-              )}
-
-              {/* Scrollable Response Box */}
-              <div style={{ padding: '24px', overflowY: 'auto', flex: 1, lineHeight: '1.7', fontSize: '15px' }}>
-                {isLoading ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#94a3b8', height: '100%' }}>
-                    <div className="spinner" style={{ width: '20px', height: '20px', border: '2px solid #334155', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                    <style>
-                      {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}
-                    </style>
-                    <span>InsightAI is thinking...</span>
-                  </div>
-                ) : (
-                  <div className="chat-response-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {previewInfo && (
-                      <div style={{ padding: '12px', backgroundColor: '#334155', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', width: 'fit-content', border: '1px solid #475569' }}>
-                        {previewInfo.isImage && previewInfo.url ? (
-                          <img src={previewInfo.url} alt={previewInfo.name} style={{ width: 'auto', height: '60px', borderRadius: '4px', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ width: '40px', height: '40px', backgroundColor: '#ef4444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                            <FileText size={20} />
+        <ScrollGlobe 
+          sections={[
+            {
+              id: "hero",
+              badge: "InsightAI",
+              title: "Research Smarter.",
+              subtitle: "Discover Faster.",
+              description: "",
+              hideTitle: !!(isLoading || chatResponse),
+              align: "left",
+              customNode: (
+                <div className={`flex flex-col gap-6 w-full transition-transform duration-700 ease-out ${(isLoading || chatResponse) ? '-translate-y-24 md:-translate-y-32' : ''}`}>
+                  {(isLoading || chatResponse) && (
+                    <div className="w-full max-w-3xl mb-3 animate-in fade-in zoom-in-95 duration-500">
+                      <HoverBorderGradient
+                        as="div"
+                        containerClassName="w-full h-[55vh] max-h-[600px] !rounded-3xl shadow-[0_0_80px_-15px_rgba(168,85,247,0.3)] pointer-events-auto"
+                        className="w-full h-full bg-[#06060c]/90 flex flex-col overflow-hidden !rounded-[inherit] !p-0 text-left backdrop-blur-2xl"
+                        duration={2}
+                      >
+                        {chatResponse && !isLoading && (
+                          <div className="flex justify-between items-center px-5 py-4 border-b border-white/10 bg-black/60">
+                            <button onClick={handleCopy} className={`flex items-center gap-2 text-sm transition-colors ${isCopied ? 'text-green-500' : 'text-neutral-400 hover:text-white'}`} title="Copy to clipboard">
+                              {isCopied ? <Check size={16} /> : <Copy size={16} />} {isCopied ? 'Copied' : 'Copy'}
+                            </button>
+                            <div className="flex gap-2.5">
+                              <button onClick={() => { setChatResponse(''); setSelectedFile(null); }} className="text-red-500 hover:text-red-400 p-1" title="Close response">
+                                <X size={16} />
+                              </button>
+                            </div>
                           </div>
                         )}
-                        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '500' }}>{previewInfo.name}</span>
-                      </div>
-                    )}
-                    <div style={{ whiteSpace: 'pre-wrap' }}>
-                      {chatResponse}
+                        <div className="p-6 md:p-8 overflow-y-auto flex-1 leading-relaxed text-[15px] custom-scrollbar">
+                          {isLoading ? (
+                            <div className="flex items-center justify-center gap-3 text-neutral-400 h-32">
+                              <div className="w-5 h-5 rounded-full border-2 border-neutral-700 border-t-purple-500 animate-spin" />
+                              <span>InsightAI is analyzing...</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-5 text-neutral-200">
+                              {previewInfo && (
+                                <a href={previewInfo.url} target="_blank" rel="noopener noreferrer" className="p-3 bg-neutral-900/50 border border-purple-500/20 rounded-xl flex items-center gap-3 w-fit hover:bg-neutral-800 transition-colors cursor-pointer group">
+                                  {previewInfo.isImage && previewInfo.url ? (
+                                    <img src={previewInfo.url} alt={previewInfo.name} className="h-10 rounded object-cover" />
+                                  ) : (
+                                    <div className="w-10 h-10 bg-purple-500/20 text-purple-400 rounded-xl flex items-center justify-center shadow-inner group-hover:bg-purple-500/30 transition-colors">
+                                      <FileText size={20} />
+                                    </div>
+                                  )}
+                                  <span className="text-sm font-medium text-white group-hover:underline">{previewInfo.name}</span>
+                                </a>
+                              )}
+                              <div className="whitespace-pre-wrap">{chatResponse}</div>
+                            </div>
+                          )}
+                        </div>
+                      </HoverBorderGradient>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            </>
-          ) : (
-            <div className="hero-image-container">
-              <img src="/hero-robot.png" alt="AI Robot Assistant" className="hero-image" />
-            </div>
-          )}
-        </section>
+                  )}
 
-        <section id="about" className="about-section container" style={{ display: chatResponse ? 'none' : 'block' }}>
-          <div className="about-content">
-            <h2>Research Smarter, Not Harder</h2>
-            <p>
-              InsightAI is the ultimate companion for students, researchers, and developers.
-              By leveraging cutting-edge LLMs, we transform the way you digest complex information.
-              Whether you are diving into a 50-page academic paper or exploring a deeply nested
-              open-source codebase, InsightAI surfaces the structural insights you need instantly.
-            </p>
-          </div>
-        </section>
+                  <BotChat 
+                    query={query} 
+                    setQuery={setQuery} 
+                    isListening={isListening} 
+                    toggleListening={toggleListening} 
+                    handleSearch={handleSearch} 
+                    selectedFile={selectedFile} 
+                    setSelectedFile={setSelectedFile} 
+                    fileInputRef={fileInputRef} 
+                    baseQueryRef={baseQueryRef}
+                  />
+                </div>
+              )
+            },
+            {
+              id: "github",
+              badge: "Repositories",
+              title: "Analyze GitHub",
+              subtitle: "Code Repositories",
+              description: "Understand massive codebases in seconds. InsightAI automatically processes repository structures, maps out dependencies, and distills architectural decisions so you never get lost in undocumented legacy code again.",
+              align: "right",
+              features: [
+                { title: "Dependency Mapping", description: "Instantly visualize inter-code relationships." },
+                { title: "Architecture Summaries", description: "Receive high-level breakdowns of repos." }
+              ]
+            },
+            {
+              id: "documents",
+              badge: "Documents",
+              title: "Synthesize Papers",
+              description: "Upload heavy research documents, scholarly articles, and lengthy PDFs. Our AI extracts core findings, aggregates reference materials, and distills the noise into directly actionable conclusions.",
+              align: "left",
+              features: [
+                { title: "Rapid Extraction", description: "Pull out statistical data and main arguments perfectly." },
+                { title: "Cross-Context Integration", description: "Tie insights from documents directly into your ongoing chat." }
+              ]
+            },
+            {
+              id: "future",
+              badge: "Velocity",
+              title: "Generate Insights",
+              subtitle: "Instantly",
+              description: "Stop wasting hours manually tracing literature reviews and undocumented algorithms. Accelerate your scientific or engineering flow by trusting InsightAI as your direct analytical partner.",
+              align: "center",
+              features: [
+                { title: "Absolute Context", description: "Memory retention across queries." },
+                { title: "Voice Supported", description: "Dictate queries natively to keep your hands on the keyboard." }
+              ]
+            }
+          ]}
+        />
 
-        <section id="features" className="features container">
-          <div className="features-header">
-            <h2>Supercharge Your Research Workflow</h2>
-          </div>
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">
-                <Search size={24} />
-              </div>
-              <h3>Text Research</h3>
-              <p>Search and extract structural insights and information from articles and scientific papers instantly.</p>
-            </div>
 
-            <div className="feature-card">
-              <div className="feature-icon">
-                <FileText size={24} />
-              </div>
-              <h3>Document Analysis</h3>
-              <p>Upload PDFs and generate summaries, highlight key points, and synthesize data effortlessly.</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon">
-                <Github size={24} />
-              </div>
-              <h3>GitHub Repo Overview</h3>
-              <p>Understand complex projects, tech stacks, and source code quickly over diverse repositories.</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon">
-                <LineChart size={24} />
-              </div>
-              <h3>Research Insights</h3>
-              <p>Generate data insights, trends, and visualizations to spot patterns in your research.</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="cta-section container">
-          <h2>Start researching smarter with AI</h2>
-          {isLoggedIn ? (
-            <button className="button-primary" onClick={() => setCurrentView('dashboard')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              Go to Dashboard <ChevronRight size={16} />
-            </button>
-          ) : (
-            <button className="button-primary" onClick={() => setModalState('signup')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              Get Started <ChevronRight size={16} />
-            </button>
-          )}
-        </section>
       </main>
 
       {currentView === 'edit-profile' && (
@@ -664,49 +619,59 @@ function App() {
         </div>
       )}
 
-      <footer className="footer">
-        <div className="container footer-grid">
-          <div className="footer-brand">
-            <h3 style={{ color: 'white' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-              InsightAI
-            </h3>
-            <p>Your AI-powered research assistant to revolutionize document analysis and GitHub exploration.</p>
+      <footer className="w-full flex justify-center pt-12 bg-transparent">
+        <div className="relative w-full overflow-hidden border-t border-purple-500/20 bg-[#06060c] px-4 py-12 md:px-8 lg:px-16 shadow-[0_0_50px_-12px_rgba(168,85,247,0.15)]">
+          {/* Internal Radial Purple Glow imitating the mockup */}
+          <div className="absolute inset-x-0 bottom-0 top-1/2 -translate-y-1/2 z-0 flex justify-center pointer-events-none">
+            <div className="w-full max-w-[1000px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-600/30 via-purple-900/10 to-transparent blur-[80px] rounded-full" />
           </div>
-          <div className="footer-column">
-            <h4 style={{ color: 'white' }}>Product</h4>
-            <ul>
-              <li><a href="#features">Features</a></li>
-              <li><a href="#">Pricing</a></li>
-              <li><a href="#documentation">Documentation</a></li>
-              <li><a href="#">API</a></li>
-            </ul>
-          </div>
-          <div className="footer-column">
-            <h4 style={{ color: 'white' }}>Resources</h4>
-            <ul>
-              <li><a href="#github">GitHub</a></li>
-              <li><a href="#">Blog</a></li>
-              <li><a href="#">Community</a></li>
-              <li><a href="#">Support</a></li>
-            </ul>
-          </div>
-          <div className="footer-column">
-            <h4 style={{ color: 'white' }}>Company</h4>
-            <ul>
-              <li><a href="#">About Us</a></li>
-              <li><a href="#">Careers</a></li>
-              <li><a href="#">Privacy</a></li>
-              <li><a href="#">Terms</a></li>
-            </ul>
-          </div>
-        </div>
-        <div className="container footer-bottom">
-          <p>© 2026 InsightAI. All rights reserved.</p>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <a href="#"><Github size={20} /></a>
+
+          <div className="relative z-10">
+            <div className="container footer-grid">
+              <div className="footer-brand">
+                <h3 style={{ color: 'white' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                  </svg>
+                  InsightAI
+                </h3>
+                <p>Your AI-powered research assistant to revolutionize document analysis and GitHub exploration.</p>
+              </div>
+              <div className="footer-column">
+                <h4 style={{ color: 'white' }}>Product</h4>
+                <ul>
+                  <li><a href="#features">Features</a></li>
+                  <li><a href="#">Pricing</a></li>
+                  <li><a href="#documentation">Documentation</a></li>
+                  <li><a href="#">API</a></li>
+                </ul>
+              </div>
+              <div className="footer-column">
+                <h4 style={{ color: 'white' }}>Resources</h4>
+                <ul>
+                  <li><a href="#github">GitHub</a></li>
+                  <li><a href="#">Blog</a></li>
+                  <li><a href="#">Community</a></li>
+                  <li><a href="#">Support</a></li>
+                </ul>
+              </div>
+              <div className="footer-column">
+                <h4 style={{ color: 'white' }}>Company</h4>
+                <ul>
+                  <li><a href="#">About Us</a></li>
+                  <li><a href="#">Careers</a></li>
+                  <li><a href="#">Privacy</a></li>
+                  <li><a href="#">Terms</a></li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="container footer-bottom" style={{ borderTop: '1px solid rgba(168, 85, 247, 0.2)', marginTop: '2rem', paddingTop: '2rem' }}>
+              <p>© 2026 InsightAI. All rights reserved.</p>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <a href="#"><Github size={20} /></a>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

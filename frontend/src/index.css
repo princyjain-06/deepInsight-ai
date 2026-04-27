@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --background: #000000;
   --foreground: #ffffff;
@@ -9,6 +13,14 @@
   --primary-foreground: #000000;
   --accent: #27272a;
   --radius: 0.75rem;
+
+  /* shadcn needed css vars */
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
 }
 
 * {
@@ -91,30 +103,71 @@ button {
   color: var(--foreground);
 }
 
+.page-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  background: radial-gradient(circle at 60% -20%, #171717 0%, #000 60%);
+  z-index: -1;
+  pointer-events: none;
+}
+
 .hero {
-  padding: 6rem 0;
+  padding: 8rem 0 6rem 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 2rem;
   align-items: center;
 }
 
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .hero-content h1 {
-  font-size: 3.5rem;
+  font-size: 4rem;
   line-height: 1.1;
   letter-spacing: -0.04em;
+  font-weight: 700;
+  color: #fff;
   margin-bottom: 1.5rem;
-  font-weight: 600;
-  background: linear-gradient(180deg, #fff 0%, #a1a1aa 100%);
+}
+
+.highlight-text {
+  background: linear-gradient(135deg, #a1a1aa, #52525b);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .hero-subtext {
-  font-size: 1.125rem;
-  color: var(--muted);
+  font-size: 1.25rem;
+  color: #a1a1aa;
+  max-width: 500px;
+  line-height: 1.6;
   margin-bottom: 2rem;
-  max-width: 480px;
+}
+
+.button-large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.button-large:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(255,255,255,0.2);
 }
 
 .chat-interface {
@@ -212,17 +265,58 @@ button {
   border-color: #52525b;
 }
 
-.hero-image-container {
+.hero-visual {
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
+  height: 500px;
 }
 
-.hero-image {
-  max-width: 100%;
-  height: auto;
-  border-radius: var(--radius);
+.mesh-wrapper {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  perspective: 1200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mesh-container {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: spin-mesh 30s linear infinite;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@keyframes spin-mesh {
+  0% { transform: rotateX(20deg) rotateY(0deg); }
+  100% { transform: rotateX(20deg) rotateY(360deg); }
+}
+
+.mesh-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.05) inset;
+}
+
+.mesh-ring.dashed {
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.hero-mesh-robot {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
   animation: float 6s ease-in-out infinite;
 }
 
@@ -231,6 +325,25 @@ button {
   50% { transform: translateY(-20px); }
   100% { transform: translateY(0px); }
 }
+
+.floating-element {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #fff;
+  font-size: 0.875rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.float-1 { top: 10%; left: -10%; animation: float 5s ease-in-out infinite 0s; }
+.float-2 { bottom: 15%; right: -5%; animation: float 6s ease-in-out infinite 1s; }
+.float-3 { top: 60%; left: -5%; animation: float 5.5s ease-in-out infinite 2s; }
 
 .about-section {
   padding: 6rem 0;
@@ -656,13 +769,10 @@ button {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background-color: var(--background);
 }
 
 .dashboard-sidebar {
   width: 280px;
-  background-color: #000;
-  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
@@ -699,12 +809,13 @@ button {
 }
 
 .nav-item:hover, .nav-item.active {
-  background-color: var(--card-bg);
+  background-color: rgba(255, 255, 255, 0.05);
   color: var(--foreground);
 }
 
 .nav-item.active {
-  background-color: var(--accent);
+  background-color: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .sidebar-footer {
@@ -723,12 +834,13 @@ button {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3f3f46, #18181b);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(168, 85, 247, 0.05));
+  border: 1px solid rgba(168, 85, 247, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  color: var(--foreground);
+  color: #d8b4fe;
 }
 
 .user-info {
@@ -751,7 +863,7 @@ button {
   flex: 1;
   overflow-y: auto;
   padding: 2.5rem 3rem;
-  background-color: #030303;
+  background-color: transparent;
 }
 
 .dashboard-header {
@@ -779,18 +891,20 @@ button {
 
 .global-search input {
   width: 100%;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border);
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
   border-radius: 999px;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
   color: var(--foreground);
   font-size: 0.875rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
 }
 
 .global-search input:focus {
-  border-color: #52525b;
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
 }
 
 .global-search svg {
@@ -815,20 +929,22 @@ button {
 }
 
 .action-card {
-  background-color: #000;
-  border: 1px solid var(--card-border);
+  background-color: rgba(23, 23, 23, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius);
   padding: 1.5rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(12px);
 }
 
 .action-card:hover {
-  transform: translateY(-2px);
-  border-color: #3f3f46;
-  background-color: var(--card-bg);
+  transform: translateY(-4px);
+  border-color: rgba(168, 85, 247, 0.5);
+  background-color: rgba(23, 23, 23, 0.6);
+  box-shadow: 0 10px 30px -10px rgba(168, 85, 247, 0.3);
 }
 
 .action-card::after {
@@ -871,8 +987,9 @@ button {
 }
 
 .recent-activity {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border);
+  background-color: rgba(23, 23, 23, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius);
   padding: 1.5rem;
 }
@@ -895,13 +1012,13 @@ button {
 }
 
 .activity-item:hover {
-  background-color: #000;
-  border-color: var(--border);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(168, 85, 247, 0.3);
 }
 
 .activity-icon {
-  color: var(--muted);
-  background-color: var(--accent);
+  color: #c084fc;
+  background-color: rgba(168, 85, 247, 0.15);
   padding: 0.5rem;
   border-radius: 0.5rem;
 }

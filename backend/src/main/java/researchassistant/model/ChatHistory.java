@@ -15,6 +15,8 @@ public class ChatHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String userEmail; // Scopes this record to a specific user
+
     private String title;
     
     private String type; // e.g., "General Chat", "Document Summary", "GitHub Analysis"
