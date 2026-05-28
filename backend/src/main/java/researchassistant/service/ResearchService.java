@@ -50,14 +50,19 @@ public ResearchService(WebClient.Builder webClientBuilder, ObjectMapper objectMa
                 }
         );
 //
-        String response = webClient.post()
-                .uri(geminiUrl + geminiKey)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-        String responseText = extractTextFromResponse(response);
+        String responseText;
+        try {
+            String response = webClient.post()
+                    .uri(geminiUrl + geminiKey)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            responseText = extractTextFromResponse(response);
+        } catch (Exception e) {
+            System.err.println("Gemini API failed: " + e.getMessage());
+            responseText = "Mock Response: AI is currently unavailable (API Key is leaked or expired). But your chatbot is connected successfully!";
+        }
         
         ChatHistory history = new ChatHistory();
         String title = request.getContent().length() > 50 ? request.getContent().substring(0, 50) + "..." : request.getContent();
@@ -117,14 +122,19 @@ public ResearchService(WebClient.Builder webClientBuilder, ObjectMapper objectMa
                 }
         );
 
-        String response = webClient.post()
-                .uri(geminiUrl + geminiKey)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-        String responseText = extractTextFromResponse(response);
+        String responseText;
+        try {
+            String response = webClient.post()
+                    .uri(geminiUrl + geminiKey)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            responseText = extractTextFromResponse(response);
+        } catch (Exception e) {
+            System.err.println("Gemini API failed: " + e.getMessage());
+            responseText = "Mock Response: AI is currently unavailable (API Key is leaked or expired). Image/Document processed successfully in mock mode.";
+        }
 
         ChatHistory history = new ChatHistory();
         String filename = image.getOriginalFilename();
@@ -184,14 +194,18 @@ public ResearchService(WebClient.Builder webClientBuilder, ObjectMapper objectMa
                 }
         );
 
-        String response = webClient.post()
-                .uri(geminiUrl + geminiKey)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-        return extractTextFromResponse(response);
+        try {
+            String response = webClient.post()
+                    .uri(geminiUrl + geminiKey)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            return extractTextFromResponse(response);
+        } catch (Exception e) {
+            System.err.println("Gemini API failed: " + e.getMessage());
+            return "mindmap\n  Mock Topic\n    🧠 Subtopic A\n    📊 Subtopic B\n      Details";
+        }
     }
 
     public String generateInfographic(String content) {
@@ -218,14 +232,18 @@ public ResearchService(WebClient.Builder webClientBuilder, ObjectMapper objectMa
                 }
         );
 
-        String response = webClient.post()
-                .uri(geminiUrl + geminiKey)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-        return extractTextFromResponse(response);
+        try {
+            String response = webClient.post()
+                    .uri(geminiUrl + geminiKey)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            return extractTextFromResponse(response);
+        } catch (Exception e) {
+            System.err.println("Gemini API failed: " + e.getMessage());
+            return "<div style=\"width:680px; background:#111113; color:#e8e8f4; padding:32px; font-family:sans-serif;\"><h2 style=\"color:#e8e8f4;\">Mock Infographic</h2><p style=\"color:#606078;\">API Key unavailable. Showing mock layout.</p></div>";
+        }
     }
 
     public String generateQuiz(String content) {
@@ -249,14 +267,18 @@ public ResearchService(WebClient.Builder webClientBuilder, ObjectMapper objectMa
                 }
         );
 
-        String response = webClient.post()
-                .uri(geminiUrl + geminiKey)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-        return extractTextFromResponse(response);
+        try {
+            String response = webClient.post()
+                    .uri(geminiUrl + geminiKey)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            return extractTextFromResponse(response);
+        } catch (Exception e) {
+            System.err.println("Gemini API failed: " + e.getMessage());
+            return "[\n  {\n    \"question\": \"What is the status of the API Key?\",\n    \"options\": [\"Active\", \"Leaked/Expired\", \"Unknown\", \"New\"],\n    \"answer\": \"Leaked/Expired\",\n    \"explanation\": \"The API key is leaked or expired so a mock quiz is returned.\"\n  }\n]";
+        }
     }
 
     public String processGithubRepo(String repoUrl, String userEmail) {
@@ -301,14 +323,19 @@ public ResearchService(WebClient.Builder webClientBuilder, ObjectMapper objectMa
                 }
         );
 
-        String response = webClient.post()
-                .uri(geminiUrl + geminiKey)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-        String responseText = extractTextFromResponse(response);
+        String responseText;
+        try {
+            String response = webClient.post()
+                    .uri(geminiUrl + geminiKey)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            responseText = extractTextFromResponse(response);
+        } catch (Exception e) {
+            System.err.println("Gemini API failed: " + e.getMessage());
+            responseText = "### Tech Stack\nMock Repo Tech Stack\n\n### Purpose/About\nMock analysis due to invalid API Key.\n\n### Key Features\n- Mock Feature 1\n- Mock Feature 2";
+        }
 
         ChatHistory history = new ChatHistory();
         history.setUserEmail(userEmail);

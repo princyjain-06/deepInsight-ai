@@ -699,7 +699,7 @@ function App() {
                       <input
                         type="text"
                         required
-                        placeholder="John Doe"
+                        placeholder="Enter your fullName"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                       />
@@ -791,7 +791,7 @@ function App() {
                   </div>
 
                   <div className="oauth-buttons">
-                    <button className="auth-btn google-btn" onClick={handleOAuthLogin}>
+                    <button className="auth-btn google-btn" onClick={() => handleOAuthLogin('google')}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M4 14.536A8.966 8.966 0 013 10C3 5.029 7.029 1 12 1c2.14 0 4.106.75 5.65 1.996l-3.235 3.124A4.305 4.305 0 0012 5.517v.001C9.697 5.518 7.818 7.378 7.818 9.68c0 .878.271 1.693.738 2.37l-4.556 2.486z" />
                         <path d="M21 10h-9v4.5h5.182a4.576 4.576 0 01-1.996 3.003l3.235 3.125A8.98 8.98 0 0021 10z" />
