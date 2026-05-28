@@ -1,20 +1,30 @@
 # DeepInsight AI 🧠
+DeepInsight is an intelligent research platform for students, developers, and knowledge workers who need to understand and synthesize information fast.
 
-DeepInsight is an intelligent research platform designed for students, developers, and knowledge workers who need to understand and synthesize information *fast*. Upload a research paper, paste a GitHub link, or share any text — and get back structured insights, visual mind maps, concept breakdowns, and comprehensive notes all in one place.
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-F2F4F9?style=for-the-badge&logo=spring-boot)
+![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-00000F?style=for-the-badge&logo=mysql&logoColor=white)
+![Gemini AI](https://img.shields.io/badge/Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![MIT License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)
 
-## 🚀 Features
+DeepInsight is an intelligent research platform for students, developers, and knowledge workers who need to understand and synthesize information fast. Users can upload a research paper, paste a GitHub link, or share any text — and get back structured insights, visual mind maps, concept breakdowns, and comprehensive notes. Currently supported input formats include plain text, GitHub repository links, and text-based research papers.
 
+## ✨ Features
 - **Automated Research Summarization:** Instantly generate concise summaries from long research papers or articles.
-- **Visual Mind Maps:** Automatically generate dynamic, interactive mind maps (powered by D3.js) to visualize complex topics.
-- **GitHub Repository Analysis:** Paste a repo link to quickly understand its structure and purpose.
-- **Interactive Chat/Q&A:** Ask questions about the uploaded content using the integrated Gemini AI.
-- **Secure Authentication:** Seamless and secure OAuth2 login system.
-- **Beautiful, Responsive UI:** Modern, animated user interface built with Framer Motion and Tailwind CSS.
+- **Visual Mind Maps:** Interactive visualization of complex topics powered by D3.js.
+- **GitHub Repository Analysis:** Deep dive into repo structure, purpose, and language breakdown.
+- **Interactive Chat/Q&A:** Ask questions directly about the uploaded content using Gemini AI.
+- **Secure OAuth2 Authentication:** Seamless and secure user login system.
+- **Responsive, Animated UI:** Modern interfaces built with Framer Motion and Tailwind CSS.
+
+## 📸 Screenshots
+<!-- TODO: Add GIF or screenshots of the application in action here -->
 
 ## 💻 Tech Stack
 
 ### Frontend
-- **Framework:** React 19 (via Vite)
+- **Framework:** React 19 (Vite)
 - **Styling:** Tailwind CSS
 - **Animations:** Framer Motion
 - **Data Visualization:** D3.js
@@ -22,18 +32,33 @@ DeepInsight is an intelligent research platform designed for students, developer
 
 ### Backend
 - **Framework:** Spring Boot (Java 17)
-- **Database:** MySQL with Spring Data JPA
-- **Security:** Spring Security & OAuth2
-- **AI Integration:** Google Gemini API (via WebFlux WebClient)
+- **Database:** MySQL
+- **Data Access:** Spring Data JPA
+- **Security:** Spring Security, OAuth2
+- **AI Integration:** Google Gemini API via WebFlux WebClient
 
 ## 🛠️ Prerequisites
-
-Before you begin, ensure you have met the following requirements:
 - **Node.js** (v18+)
 - **Java** (JDK 17+)
 - **Maven**
 - **MySQL Server**
 - **Google Gemini API Key**
+
+## 🔐 Environment Variables
+
+### Backend (`application.properties`)
+You will need to configure the following in your `application.properties` (or as environment variables):
+- Database URL
+- Database username
+- Database password
+- Gemini API key
+- OAuth2 client ID & secret
+
+### Frontend (`.env`)
+Create a `.env` file in the `frontend` directory:
+- `VITE_API_BASE_URL`
+
+> ⚠️ **Warning:** Never commit your actual API keys or secrets (like the Gemini API key or OAuth secrets) to version control. Always use a `.env` file and ensure it is included in your `.gitignore`.
 
 ## ⚙️ Installation & Setup
 
@@ -44,42 +69,68 @@ cd deepInsight-ai
 ```
 
 ### 2. Backend Setup
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Configure your `application.properties`:
-   - Set up your MySQL database credentials.
-   - Add your Google Gemini API Key.
-   - Configure OAuth2 credentials if required.
-3. Build and run the Spring Boot application:
-   ```bash
-   mvn clean install
-   mvn spring-boot:run
-   ```
-   The backend will start on `http://localhost:8080` (or as configured).
+```bash
+cd backend
+# Configure your application.properties and environment variables before running
+mvn clean install
+mvn spring-boot:run
+```
+The backend will start at `http://localhost:8080`.
 
 ### 3. Frontend Setup
-1. Open a new terminal and navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Install the dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-   The frontend will be available at `http://localhost:5173`.
+```bash
+cd frontend
+# Configure your .env file
+npm install
+npm run dev
+```
+The frontend will start at `http://localhost:5173`.
+
+## 📂 Project Structure
+```text
+deepInsight-ai/
+├── frontend/
+│   └── src/
+│       ├── components/
+│       ├── hooks/
+│       ├── pages/
+│       ├── utils/
+│       └── main.jsx
+└── backend/
+    └── src/
+        └── main/
+            └── java/
+                └── com/
+                    └── deepinsight/
+                        ├── config/
+                        ├── controller/
+                        ├── model/
+                        ├── repository/
+                        └── service/
+```
+
+## 🤝 Contributing
+Contributions are welcome! Please follow these steps:
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+> 💡 **Tip:** It's always a good idea to open an issue first to discuss the proposed changes before starting to work on them!
 
 ## 🔮 Future Scope
-
-- Support for more document formats (PDF, DOCX).
-- Collaborative research workspaces for teams.
-- Integration with external knowledge bases (e.g., Notion, Obsidian).
+- PDF and DOCX format support
+- Collaborative research workspaces
+- Integration with Notion and Obsidian
 
 ## 👨‍💻 Contributors
+- **Princy** — [https://github.com/princyjain-06](https://github.com/princyjain-06)
 
-- **Princy** - *Initial work* - [GitHub Profile](https://github.com/princyjain-06)
+## 📄 License
+Distributed under the MIT License.
+
+<br>
+<div align="center">
+Made with ❤️ by Princy
+</div>
