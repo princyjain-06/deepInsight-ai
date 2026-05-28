@@ -130,7 +130,3 @@ Contributions are welcome! Please follow these steps:
 ## 📄 License
 Distributed under the MIT License.
 
-<br>
-<div align="center">
-Made with ❤️ by Princy
-</div>
